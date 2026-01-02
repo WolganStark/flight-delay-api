@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from app.inference_pipeline import predict
+from app.inference_pipeline import predict, model
 from fastapi import HTTPException
 
 app = FastAPI(
@@ -26,3 +26,11 @@ def predict_delay(data: PredictionInput):
         return predict(data.model_dump())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "model_loaded": model is not None,
+        "model_type": type(model).__name__ if model else None        
+        }
