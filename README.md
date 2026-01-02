@@ -7,7 +7,7 @@ Python version 3.11.9
 ```bash
 cd flight-delay-api
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate #Windows
 pip install -r requirements.txt
 uvicorn app.app:app --reload
 ```
