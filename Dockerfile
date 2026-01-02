@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 #Codigo
 COPY app/ ./app/
-COPY app/artifacts ./artifacts/
+COPY artifacts/ ./artifacts/
 
 EXPOSE 8000
 

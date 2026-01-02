@@ -15,6 +15,10 @@ def load_artifacts():
     model = joblib.load(ARTIFACTS_DIR / "champion.pkl")
     ohe = joblib.load(ARTIFACTS_DIR / "onehot_encoder.pkl")
     scaler = joblib.load(ARTIFACTS_DIR / "scaler_logreg.pkl")
+
+    if not hasattr(model, "predict_proba"):
+        raise ValueError("El modelo cargado no tiene el método 'predict_proba'.")
+    
     return model, ohe, scaler
 
 model, ohe, scaler = load_artifacts()
@@ -75,6 +79,9 @@ def preprocess(payload: dict):
 
     # -------------------------
     # CONCATENACIÓN FINAL
+    # IMPORTANTE:
+    # El orden de concatenación debe coincidir EXACTAMENTE
+    # con el usado durante el entrenamiento
     # ORDEN CRÍTICO
     # -------------------------
     X = sparse.hstack([
