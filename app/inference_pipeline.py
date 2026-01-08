@@ -9,7 +9,7 @@ from pathlib import Path
 # -----------------------------
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-ARTIFACTS_DIR = BASE_DIR / "artifacts"
+ARTIFACTS_DIR = BASE_DIR / "artifacts" / "current"
 
 def load_artifacts():
     model = joblib.load(ARTIFACTS_DIR / "champion.pkl")
