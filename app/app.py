@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from app.inference_pipeline import predict, model
 from fastapi import HTTPException
 import time
-from app.db import check_db_connection
+
 
 app = FastAPI(
     title="Flight Delay Prediction API",
@@ -46,13 +46,7 @@ def predict_delay(data: PredictionInput):
 
 @app.get("/health")
 def health_check():
-    db_status = check_db_connection()
-    return {
-        "status": "ok",
-        "model_loaded": model is not None,
-        "model_type": type(model).__name__ if model else None,
-        "database": db_status       
-        }
+    return {"status": "ok"}
 
 @app.get("/metrics")
 def metrics_endpoint():

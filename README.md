@@ -66,7 +66,10 @@ Cuerpo de la solicitud:
   "origen": "GIG",
   "destino": "GRU",
   "fecha_partida": "2025-11-10T14:30:00",
-  "distancia_km": 350
+  "distancia_km": 350,
+  "temperatura": 20,
+  "velocidad_viento": 2,
+  "visibilidad": 200
 }
 ```
 
@@ -75,7 +78,9 @@ Respuesta:
 ```json
 {
   "prevision": "Retrasado",
-  "probabilidad": 0.78
+  "probabilidad": 0.78,
+  "latencia": 2.12,
+  "Explicabilidad": "La Areolinea AZ tiene retrasos concurrentes a la hora 14:30:00"
 }
 ```
 
