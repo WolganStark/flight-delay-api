@@ -13,5 +13,5 @@
     "hora_sin",
     "hora_cos"
   ],
-  "threshold": 0.3
+  "threshold": 0.35
 }
