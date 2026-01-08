@@ -36,7 +36,7 @@ PREDICTION_LATENCY = Histogram(
 )
 
 # --------------------------------------------------
-# PROMETHEUS METRICS
+# PYDANTIC MODELS
 # --------------------------------------------------
 
 class PredictionInput(BaseModel):
