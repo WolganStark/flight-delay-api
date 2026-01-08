@@ -51,16 +51,19 @@ class PredictionInput(BaseModel):
     destino: str = Field(..., json_schema_extra={"example": "GRU"})
     fecha_partida: str = Field(..., json_schema_extra={"example": "2025-11-10T14:30:00"})
     distancia_km: float = Field(..., gt=0)
+    temperatura: float = Field(..., gt=-50, lt=60)
+    velocidad_viento: float = Field(..., ge=0)
+    visibilidad: float = Field(..., ge=0)
 
 class PredictionOutput(BaseModel):
     prevision: str
     probabilidad: float
-    latencia_ms: float
+    latencia: float
+    explicabilidad: str
 
 # --------------------------------------------------
 # ENDPOINTS
 # --------------------------------------------------
-
 @app.post("/predict", response_model=PredictionOutput)
 def predict_delay(data: PredictionInput):
     REQUEST_COUNT.labels(endpoint="/predict").inc()

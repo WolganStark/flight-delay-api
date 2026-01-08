@@ -80,7 +80,7 @@ Respuesta:
   "prevision": "Retrasado",
   "probabilidad": 0.78,
   "latencia": 2.12,
-  "Explicabilidad": "La Areolinea AZ tiene retrasos concurrentes a la hora 14:30:00"
+  "explicabilidad": "La Areolinea AZ tiene retrasos concurrentes a la hora 14:30:00"
 }
 ```
 
