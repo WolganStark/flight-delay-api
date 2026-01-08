@@ -1,20 +1,43 @@
-from fastapi import FastAPI
+from xmlrpc import client
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
-from app.inference_pipeline import predict, model
-from fastapi import HTTPException
+from app.inference_pipeline import predict, model, ohe, scaler
 import time
 
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+# --------------------------------------------------
+# APP
+# --------------------------------------------------
 
 app = FastAPI(
     title="Flight Delay Prediction API",
-    version="0.0.1"
+    version="0.0.2"
 )
 
-metrics = {
-    "total_predictions": 0,
-    "total_latency_ms": 0.0,
-    "errors": 0
-}
+# --------------------------------------------------
+# PROMETHEUS METRICS
+# --------------------------------------------------
+
+REQUEST_COUNT = Counter(
+    "api_requests_total",
+    "Total number of API requests",
+    ["endpoint"]
+)
+
+ERROR_COUNT = Counter(
+    "api_errors_total",
+    "Total number of API errors"
+)
+
+PREDICTION_LATENCY = Histogram(
+    "prediction_latency_seconds",
+    "Latency of prediction endpoint"
+)
+
+# --------------------------------------------------
+# PROMETHEUS METRICS
+# --------------------------------------------------
 
 class PredictionInput(BaseModel):
     aerolinea: str = Field(..., json_schema_extra={"example": "AZ"})
@@ -26,39 +49,48 @@ class PredictionInput(BaseModel):
 class PredictionOutput(BaseModel):
     prevision: str
     probabilidad: float
+    latencia_ms: float
 
+# --------------------------------------------------
+# ENDPOINTS
+# --------------------------------------------------
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict_delay(data: PredictionInput):
+    REQUEST_COUNT.labels(endpoint="/predict").inc()
+
     start = time.perf_counter()
 
     try:
-        result = predict(data.model_dump())
-
-        latency = (time.perf_counter() - start) * 1000  # in milliseconds
-        metrics["total_predictions"] += 1
-        metrics["total_latency_ms"] += latency
-
-        return result
+        result = predict(data.model_dump())      
     except Exception as e:
-        metrics["errors"] += 1
+        ERROR_COUNT.inc()
         raise HTTPException(status_code=400, detail=str(e))
+    
+    latency_ms = (time.perf_counter() - start) * 1000  # in milliseconds
+    PREDICTION_LATENCY.observe(latency_ms / 1000)
+
+    return {
+        **result,
+        "latencia_ms": round(latency_ms, 2)
+    }
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "model_loaded": model is not None,
+        "model_type": type(model).__name__ if model else None,
+        #"model_version": getattr(model, "version", "unknown"),
+        "artifacts": {
+            "encoder": ohe is not None,
+            "scaler": scaler is not None
+        }}
 
 @app.get("/metrics")
-def metrics_endpoint():
-    total = metrics["total_predictions"]
-    avg_latency = (
-        metrics["total_latency_ms"] / total
-        if total > 0 else 0
+def metrics() -> Response:
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
     )
-
-    return {
-        "total_predictions": total,
-        "average_latency_ms": round(avg_latency, 2),
-        "errors": metrics["errors"]
-    }
    
