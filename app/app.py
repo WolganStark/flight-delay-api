@@ -2,6 +2,7 @@ from xmlrpc import client
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 from app.inference_pipeline import predict, model, ohe, scaler
+from app.weather.fallback import apply_weather_fallback
 import time
 
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
@@ -35,6 +36,11 @@ PREDICTION_LATENCY = Histogram(
     "Latency of prediction endpoint"
 )
 
+WEATHER_FALLBACK_COUNT = Counter(
+    "weather_fallback_total",
+    "Total times weather fallback was applied"
+)
+
 # --------------------------------------------------
 # PYDANTIC MODELS
 # --------------------------------------------------
@@ -62,7 +68,12 @@ def predict_delay(data: PredictionInput):
     start = time.perf_counter()
 
     try:
-        result = predict(data.model_dump())      
+        data_dict = data.model_dump()
+        data_with_weather = apply_weather_fallback(data_dict)
+        if data_with_weather.get("_weather_fallback_used"):
+            WEATHER_FALLBACK_COUNT.inc()
+        data_with_weather.pop("_weather_fallback_used", None)
+        result = predict(data_with_weather)      
     except Exception as e:
         ERROR_COUNT.inc()
         raise HTTPException(status_code=400, detail=str(e))
