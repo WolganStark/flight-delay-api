@@ -19,3 +19,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+#keys
+keys/
+*.key
+*.pub

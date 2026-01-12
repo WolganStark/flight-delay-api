@@ -5,21 +5,6 @@ services:
     build: .
     container_name: flight-delay-api
     ports:
-      - "8000:8000"
-    depends_on:
-      - db
+      - "8000:8000"   
     restart: unless-stopped
-
-  db:
-    image: postgres:15
-    container_name: flight-delay-db
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
+  
