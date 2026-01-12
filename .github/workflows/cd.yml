@@ -2,8 +2,7 @@ name: CD - Deploy to OCI VM
 
 on:
   release:
-    types: 
-      - published
+    types: [published]
 
 jobs:
   deploy:
@@ -33,4 +32,3 @@ jobs:
             docker compose up -d
 
             echo "Deployment finished successfully."
-          
