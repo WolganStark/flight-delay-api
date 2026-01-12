@@ -1,0 +1,40 @@
+name: CD - Deploy to OCI VM
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.OCI_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.OCI_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to OCI VM
+        run: |
+          ssh ubuntu@${{ secrets.OCI_HOST }} << 'EOF'
+            set -e
+
+            echo "Connected to OCI VM"
+            cd ~/flight-delay-api
+
+            echo "Pulling image from GHCR..."
+            docker pull ghcr.io/wolganstark/flight-delay-api:latest
+
+            echo "Restarting containers..."
+            docker-compose down
+            docker-compose up -d
+
+            echo "Deployment completed successfully"
+          EOF
