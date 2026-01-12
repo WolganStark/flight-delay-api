@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contens: read
+      contents: read
       packages: write
 
     steps:
