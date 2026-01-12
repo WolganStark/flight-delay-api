@@ -2,7 +2,8 @@ name: CD - Deploy to OCI VM
 
 on:
   release:
-  types: [published]
+    types: 
+      - published
 
 jobs:
   deploy:
@@ -14,18 +15,18 @@ jobs:
 
     steps:
       - name: Deploy to OCI via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_USERNAME }}
           key: ${{ secrets.OCI_SSH_KEY }}
-          scripts: |
+          script: |
             echo "Starting deployment on OCI VM..."
 
             cd ~/flight-delay-api
 
             echo "Pulling Docker image from GHCR..."
-            docker pull ghcr.io/wolganstark/filght-delay-api:latest
+            docker pull ghcr.io/wolganstark/flight-delay-api:latest
 
             echo "Restarting containers..."
             docker compose down
