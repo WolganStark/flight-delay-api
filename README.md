@@ -113,6 +113,100 @@ Respuesta
   "explicabilidad": "En proceso de desarrollo..."
 }
 ```
+---
+### Feature opcional: Explicabilidad LIME
+La API permite incluir información de **explicabilidad** en la predicción usando LIME.
+
+Esto se activa enviando el parámetro **query `explain=true`** en la llamada al endpoint `/predict`.
+
+#### Ejemplo con `curl`
+
+```bash
+curl -X POST "http://127.0.0.1:8000/predict?explain=true" \
+-H "Content-Type: application/json" \
+-d '{
+  "aerolinea": "AZ",
+  "origen": "GIG",
+  "destino": "GRU",
+  "fecha_partida": "2025-11-10T14:30:00",
+  "distancia_km": 350
+}'
+```
+
+#### Ejemplo en `Postman`
+1. Selecciona método `POST` y URL `http://127.0.0.1:8000/predict?explain=true`
+2. En **Body**, selecciona `raw` -> `JSON` y pega tu payload.
+3. Envía la petición y revisa la respuesta JSON: incluirá el campo `explicabilidad` con:
+    - 'metodo':'LIME'
+    - 'top_3_features':las 3 features que más influyen en la predicción.
+
+Ejemplo de respuesta:
+```json
+{
+  "prevision": "Retrasado",
+  "probabilidad": 0.38,
+  "latencia_ms": 608.41,
+  "explicabilidad": {
+    "metodo": "LIME",
+    "top_3_features": [
+      {
+        "feature": "aerolinea_WN <= 0.00",
+        "weight": -0.3013,
+        "direction": "en contra del retraso"
+      },
+      {
+        "feature": "origen_PLN <= 0.00",
+        "weight": 0.203,
+        "direction": "a favor del retraso"
+      },
+      {
+        "feature": "destino_GFK <= 0.00",
+        "weight": 0.1614,
+        "direction": "a favor del retraso"
+      }
+    ]
+  }
+}
+```
+ 
+
+
+## Endpoint Raíz
+```http
+GET /
+```
+Devuelve información para **debugging y QA**, incluyendo:
+- Estado de la API y del modelo.
+- Tipo de modelo cargado.
+- Features categóricas y númericas esperadas.
+- Threshold de predicción utilizado.
+- Ejemplo de payload mínimo.
+- Links a los endpoints principales (`/predict`,`/health`,`/metrics`)
+
+Ejemplo de respuesta:
+```json
+{
+  "api_name": "Flight Delay Prediction API",
+  "version": "1.0.0",
+  "status": "ok",
+  "model_loaded": true,
+  "model_type": "GradientBoostingClassifier",
+  "features": {
+    "categorical": ["aerolinea", "origen", "destino", "dia_semana"],
+    "numeric": ["distancia_km", "hora_decimal", "temperatura", "velocidad_viento", "visibilidad"]
+  },
+  "prediction_threshold": 0.35,
+  "example_payload": {
+    "aerolinea": "AZ",
+    "origen": "GIG",
+    "destino": "GRU",
+    "fecha_partida": "2025-11-10T14:30:00",
+    "distancia_km": 350
+  },
+  "links": ["/predict", "/health", "/metrics"]
+}
+
+```
 
 ## Metricas
 
