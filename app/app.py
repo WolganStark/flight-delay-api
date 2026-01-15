@@ -4,14 +4,15 @@ from typing import Optional
 import time
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from app.weather.fallback import apply_fallbacks
-from app.inference_pipeline import predict, model
+from app.inference_pipeline import predict, model, CATEGORICAL_FEATURES, NUMERIC_FEATURES
+from app.debug import get_debug_info
 
 # -----------------------
 # APP
 # -----------------------
 app = FastAPI(
     title="Flight Delay Prediction API",
-    version="1.0.0"
+    version="2.0.2"
 )
 
 # -----------------------
@@ -101,3 +102,8 @@ def metrics() -> Response:
         generate_latest(),
         media_type=CONTENT_TYPE_LATEST
     )
+
+@app.get("/", summary="Root endpoint para debugging y QA")
+def root_debug():
+    REQUEST_COUNT.labels(endpoint="/").inc()
+    return get_debug_info()
