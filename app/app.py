@@ -57,13 +57,13 @@ class PredictionOutput(BaseModel):
     prevision: str
     probabilidad: float
     latencia_ms: float
-    explicabilidad: str
+    explicabilidad: Optional[dict] = None
 
 # -----------------------
 # ENDPOINTS
 # -----------------------
 @app.post("/predict", response_model=PredictionOutput)
-def predict_delay(data: PredictionInput):
+def predict_delay(data: PredictionInput, explain: bool = False):
     REQUEST_COUNT.labels(endpoint="/predict").inc()
     start = time.perf_counter()
 
@@ -73,7 +73,7 @@ def predict_delay(data: PredictionInput):
         if payload.pop("_fallback_used", False):
             FALLBACK_COUNT.inc()
 
-        result = predict(payload)
+        result = predict(payload, explain=explain)
 
     except Exception as e:
         ERROR_COUNT.inc()
@@ -84,8 +84,7 @@ def predict_delay(data: PredictionInput):
 
     return {
         **result,
-        "latencia_ms": round(latency_ms, 2),
-        "explicabilidad": "En proceso de desarrollo..."
+        "latencia_ms": round(latency_ms, 2)        
     }
 
 @app.get("/health")

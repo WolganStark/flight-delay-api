@@ -132,3 +132,77 @@ Expone métricas en formato Prometheus, incluyendo:
 
 Este endpoint está pensado para monitoreo y observabilidad en producción.
 
+## Features del Modelo
+
+### Variables de entrada:
+- Aerolínea
+
+- Aeropuerto de origen
+
+- Aeropuerto de destino
+
+- Fecha y hora de partida
+
+- Distancia del vuelo
+
+- Variables climáticas (opcional)
+
+### Features derivadas en inferencia:
+
+Algunas variables se reconstruyen de forma determinística en producción:
+
+- `hora_decimal` (derivada de `fecha_partida`)
+
+- `dia_semana` (derivada de `fecha_partida`)
+
+Esto garantiza coherencia total entre entrenamiento e inferencia.
+
+### Manejo de Valores Faltantes
+
+La API implementa un sistema de **fallbacks seguros** para variables opcionales.
+Si una variable no es enviada en el request, se asigna un valor por defecto antes del preprocesamiento.
+
+El uso de fallbacks es registrado como métrica.
+
+## Docker
+### Build de la imagen
+```bash
+docker build -t flight-delay-api .
+```
+
+### Ejecutar contenedor
+```bash
+docker run -p 8000:8000 flight-delay-api
+```
+
+## CI/CD y Despliegue
+
+- **CI**: se ejecuta automáticamente en cada push a `main`
+
+- **CD**: se activa al crear un release y despliega la nueva imagen en una VM en **Oracle Cloud Infrastructure (OCI)**
+
+El despliegue utiliza contenedores Docker y reinicio controlado del servicio.
+
+## Estado del Proyecto
+
+- Inferencia local validada ✅
+
+- Docker validado ✅
+
+- Codespaces validado ✅
+
+- CI/CD activo ✅
+
+- Servicio desplegado en OCI ✅
+
+## Notas Finales
+
+Este proyecto corresponde a una versión evolucionada respecto al MVP inicial, incorporando:
+
+- Pipeline de inferencia robusto
+
+- Validación estricta de features
+
+- Observabilidad
+
+- Automatización de despliegue
