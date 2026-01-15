@@ -1,24 +1,25 @@
 from typing import Dict
-#import logging
 
-DEFAULT_WEATHER = {
+# Todas las features que el modelo espera
+DEFAULT_NUMERIC_FEATURES = {
+    "distancia_km": 0.0,
     "temperatura": 0.0,
     "velocidad_viento": 5.0,
-    "visibilidad": 10000.0
+    "visibilidad": 10000.0,    
 }
 
-def apply_weather_fallback(data: Dict) -> Dict:
+def apply_fallbacks(data: Dict) -> Dict:
     """
-    Garantiza que las variables climáticas existan.
-    Si faltan, se completan con valores seguros.
+    Garantiza que todas las features numéricas requeridas
+    por el modelo existan antes de crear el DataFrame.
     """
-
     enriched = data.copy()
     fallback_used = False
-    for key, default_value in DEFAULT_WEATHER.items():
-        if key not in enriched or enriched[key] is None:
-            enriched[key] = default_value
+
+    for feature, default_value in DEFAULT_NUMERIC_FEATURES.items():
+        if feature not in enriched or enriched[feature] is None:
+            enriched[feature] = default_value
             fallback_used = True
-        
-    enriched["_weather_fallback_used"] = fallback_used
+
+    enriched["_fallback_used"] = fallback_used
     return enriched
