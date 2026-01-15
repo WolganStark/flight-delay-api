@@ -1,8 +1,7 @@
 services:
   api:
-    build: .
+    image: ghcr.io/wolganstark/flight-delay-api:${IMAGE_TAG}
     container_name: flight-delay-api
     ports:
-      - "8000:8000"   
+      - "8000:8000"
     restart: unless-stopped
-  
