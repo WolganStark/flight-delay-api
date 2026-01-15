@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict
 from app.weather.fallback import apply_fallbacks
+from app.explainability.lime_service import get_top_3_influential_features
 
 # -----------------------------
 # RUTAS
@@ -94,7 +95,7 @@ def preprocess(payload: Dict) -> pd.DataFrame:
 # -----------------------------
 # PREDICCIÓN
 # -----------------------------
-def predict(payload: Dict) -> Dict:
+def predict(payload: Dict, explain: bool = False) -> Dict:
     """
     Ejecuta inferencia completa y devuelve predicción
     en formato API-friendly.
@@ -106,7 +107,21 @@ def predict(payload: Dict) -> Dict:
     threshold = 0.35
     prediction = "Retrasado" if proba >= threshold else "No Retrasado"
 
-    return {
+    result = {
         "prevision": prediction,
         "probabilidad": round(float(proba), 2)
     }
+    # -----------------------------
+    # EXPLICABILIDAD    
+    # -----------------------------
+    if explain:
+        lime_result = get_top_3_influential_features(X)
+        result['explicabilidad'] = {
+            'metodo': 'LIME',
+            'top_3_features': lime_result['top_3_features_influyentes']
+        }
+
+    return {
+        **result
+    }
+
