@@ -22,17 +22,19 @@ jobs:
           ssh-keyscan -H ${{ secrets.OCI_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to OCI VM
+        env:
+          IMAGE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          ssh ubuntu@${{ secrets.OCI_HOST }} << 'EOF'
+          ssh ubuntu@${{ secrets.OCI_HOST }} << EOF
             set -e
 
             echo "Connected to OCI VM"
             cd ~/flight-delay-api
 
-            echo "Pulling image from GHCR..."
-            docker pull ghcr.io/wolganstark/flight-delay-api:latest
+            echo "Deploying image tag: ${IMAGE_TAG}"
 
-            echo "Restarting containers..."
+            docker pull ghcr.io/wolganstark/flight-delay-api:${IMAGE_TAG}
+
             docker compose down
             docker compose up -d
 

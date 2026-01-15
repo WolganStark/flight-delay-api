@@ -1,24 +1,64 @@
-# Flight Delay API
+# Flight Delay Prediction API
 
-Python version 3.11.9
+API de inferencia para predecir retrasos en vuelos, construida con **FastAPI** y un modelo de **Machine Learning** entrenado previamente.  
+El servicio expone endpoints de predicción, health check y métricas, y está preparado para ejecución local, Docker y despliegue en la nube (OCI).
 
-## Run locally
+---
+
+## Stack Tecnológico
+
+- Python 3.11
+- FastAPI
+- scikit-learn
+- Pandas / NumPy
+- Prometheus Client
+- Docker
+
+---
+
+## Ejecución Local
+
+### 1. Crear y activar entorno virtual
 
 ```bash
 cd flight-delay-api
 python -m venv venv
-venv\Scripts\activate #Windows
-pip install -r requirements.txt
-uvicorn app.app:app --reload
+venv\Scripts\activate   # Windows
+# source venv/bin/activate  # Linux / Mac
 ```
-## Available Endpoints
 
-### Health check
+### 2. Instalar dependencias
 
 ```bash
+pip install -r requirements.txt
+```
+
+### 3. Levantar la API
+```bash
+uvicorn app.app:app --reload
+```
+La API estará disponible en:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Documentación interactiva (Swagger)
+FastAPI genera automáticamente la documentación:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Endpoints Disponibles
+
+### Health Ckeck
+
+```http
 GET /health
 ```
-Devuelve el estado del servicio e información básica de las dependencias
+
+Verifica el estado del servicio y la carga del modelo.
 
 Ejemplo de respuesta:
 
@@ -26,39 +66,29 @@ Ejemplo de respuesta:
 {
   "status": "ok",
   "model_loaded": true,
-  "model_type": "LogisticRegression",
-  "database": {
-    "enabled": false,
-    "connected": false
-  }
+  "model_type": "GradientBoostingClassifier"
 }
 ```
 
-### Metrics
+### Predicción de retraso
 
-```bash
-GET /metrics
-```
-
-Devuelve metricas basica en memoria del servicio
-
-Ejemplo de respuesta:
-
-```json
-{
-  "total_predictions": 12,
-  "average_latency_ms": 4.82,
-  "errors": 0
-}
-```
-
-### Prediction
-
-```bash
+```http
 POST /predict
 ```
 
-Cuerpo de la solicitud:
+Payload minimo
+
+```json
+{
+  "aerolinea": "AZ",
+  "origen": "GIG",
+  "destino": "GRU",
+  "fecha_partida": "2025-11-10T14:30:00",
+  "distancia_km": 350
+}
+```
+
+Payload completo (opcional)
 
 ```json
 {
@@ -69,24 +99,36 @@ Cuerpo de la solicitud:
   "distancia_km": 350,
   "temperatura": 20,
   "velocidad_viento": 2,
-  "visibilidad": 200
+  "visibilidad": 10000
 }
 ```
 
-Respuesta: 
+Respuesta
 
 ```json
 {
   "prevision": "Retrasado",
-  "probabilidad": 0.78,
-  "latencia": 2.12,
-  "explicabilidad": "La Areolinea AZ tiene retrasos concurrentes a la hora 14:30:00"
+  "probabilidad": 0.37,
+  "latencia_ms": 2.15,
+  "explicabilidad": "En proceso de desarrollo..."
 }
 ```
 
-### API Docs
+## Metricas
 
-Interfaz de Swagger disponible en:
-```bash
-http://127.0.0.1:8000/docs
+```http
+GET /metrics
 ```
+
+Expone métricas en formato Prometheus, incluyendo:
+
+- Total de requests
+
+- Errores
+
+- Latencia de inferencia
+
+- Uso de fallbacks
+
+Este endpoint está pensado para monitoreo y observabilidad en producción.
+
