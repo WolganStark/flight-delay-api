@@ -57,7 +57,7 @@ class PredictionOutput(BaseModel):
     prevision: str
     probabilidad: float
     latencia_ms: float
-    explicabilidad: Optional[dict]
+    explicabilidad: Optional[dict] = None
 
 # -----------------------
 # ENDPOINTS
