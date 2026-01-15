@@ -23,20 +23,23 @@ jobs:
 
       - name: Deploy to OCI VM
         env:
-          IMAGE_TAG: ${{ github.event.release.tag_name }}
+          SHA_SHORT: ${{ github.sha }}
         run: |
+          IMAGE_TAG=$(echo $SHA_SHORT | cut -c1-7)
+
           ssh ubuntu@${{ secrets.OCI_HOST }} << EOF
             set -e
 
-            echo "Connected to OCI VM"
             cd ~/flight-delay-api
 
-            echo "Deploying image tag: ${IMAGE_TAG}"
+            export IMAGE_TAG=${IMAGE_TAG}
 
-            docker pull ghcr.io/wolganstark/flight-delay-api:${IMAGE_TAG}
+            echo "Deploying image tag: \$IMAGE_TAG"
+
+            docker pull ghcr.io/wolganstark/flight-delay-api:\$IMAGE_TAG
 
             docker compose down
             docker compose up -d
 
-            echo "Deployment completed successfully"
+            echo "Deployment completed"
           EOF
