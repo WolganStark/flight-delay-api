@@ -22,10 +22,8 @@ jobs:
           ssh-keyscan -H ${{ secrets.OCI_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to OCI VM
-        env:
-          SHA_SHORT: ${{ github.sha }}
         run: |
-          IMAGE_TAG=$(echo $SHA_SHORT | cut -c1-7)
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
 
           ssh ubuntu@${{ secrets.OCI_HOST }} << EOF
             set -e
@@ -38,8 +36,7 @@ jobs:
 
             docker pull ghcr.io/wolganstark/flight-delay-api:\$IMAGE_TAG
 
-            docker compose down
-            docker compose up -d
+            docker compose up -d --force-recreate
 
             echo "Deployment completed"
           EOF
