@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 #Evita archivos .pyc y buffers
 
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-
 WORKDIR /app
 
 #Dependencias

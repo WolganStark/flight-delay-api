@@ -1,0 +1,17 @@
+{
+  "model_name": "flight_delay_logreg",
+  "version": "0.0.1",
+  "framework": "scikit-learn",
+  "python_version": "3.11.9",
+  "trained_at": "2025-12-20T14:22:00Z",
+  "features": [
+    "aerolinea",
+    "origen",
+    "destino",
+    "distancia_km",
+    "dia_semana",
+    "hora_sin",
+    "hora_cos"
+  ],
+  "threshold": 0.3
+}

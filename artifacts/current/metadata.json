@@ -1,0 +1,19 @@
+{
+  "model_name": "flight_delay_gradient_boosting",
+  "version": "2.0.0",
+  "framework": "scikit-learn",
+  "python_version": "3.11.9",
+  "trained_at": "2026-01-12T14:22:00Z",
+  "features": [
+    "aerolinea",
+    "origen",
+    "destino",
+    "distancia_km",
+    "hora_decimal",
+    "temperatura",
+    "velocidad_viento",
+    "visibilidad",
+    "recent_delay_in_origin"
+  ],
+  "threshold": 0.35
+}
