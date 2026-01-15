@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, Body
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 import time
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from app.weather.fallback import apply_fallbacks
-from app.inference_pipeline import predict, model, CATEGORICAL_FEATURES, NUMERIC_FEATURES
+from app.inference_pipeline import predict, predict_batch, model
 from app.debug import get_debug_info
 
 # -----------------------
@@ -12,7 +12,7 @@ from app.debug import get_debug_info
 # -----------------------
 app = FastAPI(
     title="Flight Delay Prediction API",
-    version="2.0.2"
+    version="2.0.5"
 )
 
 # -----------------------
@@ -52,7 +52,7 @@ class PredictionInput(BaseModel):
     temperatura: Optional[float] = Field(None, gt=-50, lt=60)
     velocidad_viento: Optional[float] = Field(None, ge=0)
     visibilidad: Optional[float] = Field(None, ge=0)
-    
+
 
 class PredictionOutput(BaseModel):
     prevision: str
@@ -60,33 +60,40 @@ class PredictionOutput(BaseModel):
     latencia_ms: float
     explicabilidad: Optional[dict] = None
 
+
 # -----------------------
 # ENDPOINTS
 # -----------------------
-@app.post("/predict", response_model=PredictionOutput)
-def predict_delay(data: PredictionInput, explain: bool = False):
+@app.post("/predict", response_model=List[PredictionOutput])
+def predict_delay(
+    data: List[PredictionInput] = Body(...),  # Siempre lista
+    explain: bool = False
+):
     REQUEST_COUNT.labels(endpoint="/predict").inc()
     start = time.perf_counter()
 
     try:
-        payload = apply_fallbacks(data.model_dump())
+        payloads = [d.model_dump() for d in data]
 
-        if payload.pop("_fallback_used", False):
-            FALLBACK_COUNT.inc()
+        if len(payloads) == 1:
+            # Single record → LIME permitido
+            result = predict(payloads[0], explain=explain)
+            latency_ms = (time.perf_counter() - start) * 1000
+            result["latencia_ms"] = round(latency_ms, 2)
+            return [result]  # Siempre devuelve lista para consistencia
 
-        result = predict(payload, explain=explain)
+        else:
+            # Batch → no LIME
+            results = predict_batch(payloads)
+            latency_ms = (time.perf_counter() - start) * 1000
+            for r in results:
+                r["latencia_ms"] = round(latency_ms, 2)
+            return results
 
     except Exception as e:
         ERROR_COUNT.inc()
         raise HTTPException(status_code=400, detail=str(e))
 
-    latency_ms = (time.perf_counter() - start) * 1000
-    PREDICTION_LATENCY.observe(latency_ms / 1000)
-
-    return {
-        **result,
-        "latencia_ms": round(latency_ms, 2)        
-    }
 
 @app.get("/health")
 def health_check():
@@ -96,12 +103,14 @@ def health_check():
         "model_type": type(model).__name__ if model else None
     }
 
+
 @app.get("/metrics")
 def metrics() -> Response:
     return Response(
         generate_latest(),
         media_type=CONTENT_TYPE_LATEST
     )
+
 
 @app.get("/", summary="Root endpoint para debugging y QA")
 def root_debug():
