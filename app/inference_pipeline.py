@@ -1,7 +1,7 @@
 import joblib
 import pandas as pd
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 from app.weather.fallback import apply_fallbacks
 from app.explainability.lime_service import get_top_3_influential_features
 
@@ -37,45 +37,37 @@ NUMERIC_FEATURES = [
 ]
 
 # -----------------------------
-# PREPROCESAMIENTO
+# PREPROCESAMIENTO BATCH
 # -----------------------------
-def preprocess(payload: Dict) -> pd.DataFrame:
-    """
-    Convierte un payload validado en el dataset final
-    esperado por el modelo. Nunca falla por columnas faltantes.
-    """
-    # Defensa MLOps: fallback incluso fuera de FastAPI
-    payload = apply_fallbacks(payload)
-    payload.pop("_fallback_used", None)
+def preprocess_batch(payloads):
+    if isinstance(payloads, list):
+        df = pd.DataFrame(payloads)
+    elif isinstance(payloads, pd.DataFrame):
+        df = payloads.copy()
+    else:
+        raise ValueError("payloads debe ser lista de dicts o DataFrame")
 
-    df = pd.DataFrame([payload])
+    # Aplicar fallback fila por fila
+    df = df.apply(lambda row: apply_fallbacks(row.to_dict()), axis=1, result_type='expand')
+    df = df.drop(columns=["_fallback_used"], errors="ignore")  # CAMBIO: fix error 400
 
-    # -------------------------
-    # FECHA → HORA DECIMAL
-    # -------------------------
+    # Fecha → hora_decimal y dia_semana
     dt = pd.to_datetime(df["fecha_partida"], errors="coerce")
     df["hora_decimal"] = dt.dt.hour + dt.dt.minute / 60
     df["dia_semana"] = dt.dt.dayofweek
 
-    # -------------------------
-    # GARANTIZAR COLUMNAS
-    # -------------------------
+    # Columnas faltantes
     for col in NUMERIC_FEATURES:
         if col not in df.columns:
             df[col] = 0.0
-
     for col in CATEGORICAL_FEATURES:
         if col not in df.columns:
             df[col] = "UNKNOWN"
 
-    # -------------------------
-    # NUMÉRICAS (IMPUTACIÓN)
-    # -------------------------
+    # Imputación numérica
     df[NUMERIC_FEATURES] = num_imputer.transform(df[NUMERIC_FEATURES])
 
-    # -------------------------
-    # CATEGÓRICAS (OHE)
-    # -------------------------
+    # OHE categórico
     X_cat = ohe.transform(df[CATEGORICAL_FEATURES])
     X_cat = pd.DataFrame(
         X_cat,
@@ -83,25 +75,15 @@ def preprocess(payload: Dict) -> pd.DataFrame:
         index=df.index
     )
 
-    # -------------------------
-    # DATASET FINAL
-    # ORDEN CRÍTICO
-    # -------------------------
     X_num = df[NUMERIC_FEATURES]
     X = pd.concat([X_num, X_cat], axis=1)
-
     return X
 
 # -----------------------------
-# PREDICCIÓN
+# PREDICCIÓN SINGLE RECORD
 # -----------------------------
-def predict(payload: Dict, explain: bool = False) -> Dict:
-    """
-    Ejecuta inferencia completa y devuelve predicción
-    en formato API-friendly.
-    """
-    X = preprocess(payload)
-
+def predict(payload: Dict, explain: bool = False):
+    X = preprocess_batch([payload])  # Reusar batch prep
     proba = model.predict_proba(X)[0, 1]
 
     threshold = 0.35
@@ -111,9 +93,7 @@ def predict(payload: Dict, explain: bool = False) -> Dict:
         "prevision": prediction,
         "probabilidad": round(float(proba), 2)
     }
-    # -----------------------------
-    # EXPLICABILIDAD    
-    # -----------------------------
+
     if explain:
         lime_result = get_top_3_influential_features(X)
         result['explicabilidad'] = {
@@ -121,7 +101,24 @@ def predict(payload: Dict, explain: bool = False) -> Dict:
             'top_3_features': lime_result['top_3_features_influyentes']
         }
 
-    return {
-        **result
-    }
+    return result
 
+# -----------------------------
+# PREDICCIÓN BATCH
+# -----------------------------
+def predict_batch(payloads: List[Dict]):
+    X = preprocess_batch(payloads)
+    probas = model.predict_proba(X)[:, 1]
+
+    threshold = 0.35
+    predictions = ["Retrasado" if p >= threshold else "No Retrasado" for p in probas]
+
+    results = []
+    for i, p in enumerate(probas):
+        result = {
+            "prevision": predictions[i],
+            "probabilidad": round(float(p), 2)
+            # No LIME en batch
+        }
+        results.append(result)
+    return results
